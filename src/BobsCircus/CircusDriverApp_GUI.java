@@ -1,5 +1,9 @@
 package BobsCircus;
 
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Optional;
 
 import javafx.application.Application;
@@ -10,6 +14,7 @@ import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
 import javafx.stage.Stage;	
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 
 
 public class CircusDriverApp_GUI extends Application{
@@ -17,6 +22,9 @@ public class CircusDriverApp_GUI extends Application{
 	private Circus circus;
 	private TextArea outputArea;
 	private ImageView imageView;
+	private final List<Animal> animalList = new ArrayList<>();
+	private final List<Person> personList = new ArrayList<>();
+	private final List<Building> buildingList = new ArrayList<>();
 	
 	
 	public void start(Stage stage) {
@@ -25,22 +33,27 @@ public class CircusDriverApp_GUI extends Application{
 		
 		outputArea = new TextArea();
 		outputArea.setEditable(false);
-		
-		Label outputLabel = new Label("Output");
-		outputLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14px;");
-		VBox centerBox = new VBox(5, outputLabel, outputArea);
-		centerBox.setPadding(new Insets(10));
-		centerBox.setStyle("-fx-border-color: black; -fx-border-width: 1;");
+		outputArea.setLayoutX(25);
+		outputArea.setLayoutY(228);
+		outputArea.setPrefSize(900, 695);
 		
 		imageView = new ImageView();
-		imageView.setFitWidth(250);
+		imageView.setFitWidth(126);
+		imageView.setFitHeight(780);
 		imageView.setPreserveRatio(true);
 		
 		Label rightLabel = new Label("Image + Details");
-        rightLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14px;");
+        rightLabel.setStyle("-fx-font-size: 18px;");
 
-        VBox rightPanel = new VBox(10, rightLabel, imageView);
-        rightPanel.setPadding(new Insets(10));
+        StackPane imageBox = new StackPane(imageView);
+        imageBox.setPrefSize(126, 780);
+        imageBox.setStyle("-fx-border-color: lightgray; -fx-border-width: 1;");
+
+        VBox rightPanel = new VBox(16, rightLabel, imageBox);
+        rightPanel.setLayoutX(948);
+        rightPanel.setLayoutY(68);
+        rightPanel.setPrefSize(159, 854);
+        rightPanel.setPadding(new Insets(18, 15, 15, 15));
         rightPanel.setStyle("-fx-border-color: black; -fx-border-width: 1;");
 
 				
@@ -48,8 +61,8 @@ public class CircusDriverApp_GUI extends Application{
 		//buttons for Animal
 		Button addAnimalButton = new Button("Add Animal");
 		Button displayAnimalsButton = new Button("Display All Animals");
-		Button sortAgeButton = new Button("Sort Animals By Age");
-		Button sortNameButton = new Button("Sort Animals By Name");
+		Button sortAgeButton = new Button("Sort Animals by Age");
+		Button sortNameButton = new Button("Sort Animals by Name");
 		Button searchAnimalButton = new Button("Search Animal By Name");
 		
 		//buttons for Person
@@ -65,10 +78,17 @@ public class CircusDriverApp_GUI extends Application{
 		
 		//exit button
 		Button exitButton = new Button("Exit");
+
+		Button[] buttons = {
+				addAnimalButton, addPersonButton, addBuildingButton, generateTicketButton,
+				displayAnimalsButton, displayPersonsButton, displayBuildingsButton,
+				sortAgeButton, sortNameButton, searchAnimalButton, exitButton
+		};
+		for(Button button : buttons) {
+			button.setStyle("-fx-font-size: 18px; -fx-padding: 6 12 6 12;");
+		}
 		
 		addAnimalButton.setOnAction(e -> {
-			outputArea.appendText("Add Animal\n");
-			
 			ChoiceDialog<String> typeDialog =
 					new ChoiceDialog<>("Dog", "Dog", "Horse", "Bird", "Lion");
 			typeDialog.setHeaderText("Select Animal Type");
@@ -124,25 +144,31 @@ public class CircusDriverApp_GUI extends Application{
 			}
 			
 			circus.addAnimal(animal);
-			outputArea.appendText(animal.toString() +"\n");
-			imageView.setImage(new Image(getClass().getResourceAsStream(image)));
+			animalList.add(animal);
+			appendAnimalSummary(animal);
+					
+			setImage(image);
 		
 		});
 		
 		displayAnimalsButton.setOnAction(e -> {
-		    outputArea.appendText("Display All Animals\n");
-		    circus.displayAnimals();
+		    displayAllAnimals();
 		});
 		
-		sortAgeButton.setOnAction(e -> outputArea.appendText("Sort Animals By Age\n"));
-		sortNameButton.setOnAction(e -> outputArea.appendText("Sort Animals By Name\n"));
+		sortAgeButton.setOnAction(e -> {
+			circus.sortAnimalsByAge();
+			animalList.sort(Comparator.comparingInt(Animal::getAge));
+			displayAllAnimals();
+		});
+		sortNameButton.setOnAction(e -> {
+			circus.sortAnimalsByName();
+			animalList.sort(Comparator.comparing(animal -> animal.getName().toLowerCase()));
+			displayAllAnimals();
+		});
 		
 		searchAnimalButton.setOnAction(e -> {
-			outputArea.appendText("Search Animal By Name\n");
-			
-			
 			TextInputDialog level1 = new TextInputDialog();
-			level1.setHeaderText("Enter animal name");
+			level1.setHeaderText("Enter animal name:");
 			Optional<String> op1 = level1.showAndWait();
 			if(!op1.isPresent()) return;
 			String name = op1.get();
@@ -150,18 +176,17 @@ public class CircusDriverApp_GUI extends Application{
 			Animal found = circus.searchAnimalByName(name);
 			
 			if(found != null) {
-				outputArea.appendText("Found: " + found.toString() + "\n");
-				imageView.setImage(new Image(getClass().getResourceAsStream(found.getImagePath())));				}
+				outputArea.setText(formatAnimalDetails(found));
+				setImage(found.getImagePath());
+			}
 			else {
-				outputArea.appendText("Animal not found\n");
-				}
+				outputArea.setText("No animal found with the name: " + name + "\n");
+			}
 			
 			
 		});
 
 		addPersonButton.setOnAction(e -> {
-			outputArea.appendText("Add Person\n");
-			
 			ChoiceDialog<String> typeDialog =
 					new ChoiceDialog<>("Clerk", "Clerk", "Acrobatic");
 			typeDialog.setHeaderText("Select Person Type");
@@ -207,18 +232,17 @@ public class CircusDriverApp_GUI extends Application{
 			}
 			
 			circus.addPerson(person);
-			outputArea.appendText(person.toString() +"\n");
-			imageView.setImage(new Image(getClass().getResourceAsStream(image)));
+			personList.add(person);
+			outputArea.appendText(formatPerson(person) + "\n");
+			setImage(image);
 		
 		});
 		
-		displayPersonsButton.setOnAction(e -> { outputArea.appendText("Display All Persons\n");
-		    circus.displayPersons();
+		displayPersonsButton.setOnAction(e -> {
+		    displayAllPersons();
 		});
 		
 		addBuildingButton.setOnAction(e -> {
-			outputArea.appendText("Add Building\n");
-			
 			ChoiceDialog<String> typeDialog =
 					new ChoiceDialog<>("Arena", "Arena", "Ticketing Office");
 			typeDialog.setHeaderText("Select Building Type");
@@ -258,67 +282,228 @@ public class CircusDriverApp_GUI extends Application{
 			}
 			
 			circus.addBuilding(building);
-			outputArea.appendText(building.toString() +"\n");
-			imageView.setImage(new Image(getClass().getResourceAsStream(image)));
+			buildingList.add(building);
+			outputArea.setText(formatBuilding(building));
+			setImage(image);
 		
 		});
 		
 		displayBuildingsButton.setOnAction(e -> {
-		    outputArea.appendText("Display All Buildings\n");
-		    circus.displayBuildings();
+		    displayAllBuildings();
 		});
 		
 		generateTicketButton.setOnAction(e -> {
-			outputArea.appendText("Generate Ticket\n");
+			List<String> ticketLines = new ArrayList<>();
+			boolean buyMore = true;
+			while(buyMore) {
+				String dayChoice = showChoice("Select Day of Week",
+						"Monday (10% discount)",
+						"Monday (10% discount)",
+						"Tuesday (10% discount)",
+						"Wednesday (10% discount)",
+						"Thursday (10% discount)",
+						"Friday (10% discount)",
+						"Saturday (0% discount)",
+						"Sunday (0% discount)");
+				if(dayChoice == null) return;
+				
+				String customerChoice = showChoice("Select Customer Type",
+						"Child (10% discount)",
+						"Child (10% discount)",
+						"Student (10% discount)",
+						"Adult",
+						"Senior (5% discount)");
+				if(customerChoice == null) return;
+				
+				String seatChoice = showChoice("Select Seat Level",
+						"Upper Level (5% discount)",
+						"Lower Level (No extra charge)",
+						"T-Level (x2 ticket price)",
+						"Upper Level (5% discount)");
+				if(seatChoice == null) return;
+				
+				TextInputDialog priceDialog = new TextInputDialog();
+				priceDialog.setHeaderText("Enter base price:");
+				Optional<String> priceResult = priceDialog.showAndWait();
+				if(!priceResult.isPresent()) return;
+				double basePrice = Double.parseDouble(priceResult.get());
+				
+				TextInputDialog ticketsDialog = new TextInputDialog();
+				ticketsDialog.setHeaderText("Enter number of tickets:");
+				Optional<String> ticketsResult = ticketsDialog.showAndWait();
+				if(!ticketsResult.isPresent()) return;
+				int ticketCount = Integer.parseInt(ticketsResult.get());
+				
+				ticketLines.add(formatTicketLine(ticketCount, customerChoice, basePrice, dayChoice, seatChoice));
+				
+				Alert moreTicketsDialog = new Alert(Alert.AlertType.CONFIRMATION);
+				moreTicketsDialog.setTitle("Confirmation");
+				moreTicketsDialog.setHeaderText("Do you want to buy more tickets?");
+				moreTicketsDialog.setContentText("Click OK for Yes, Cancel for No");
+				Optional<ButtonType> moreTicketsResult = moreTicketsDialog.showAndWait();
+				buyMore = moreTicketsResult.isPresent() && moreTicketsResult.get() == ButtonType.OK;
+			}
 			
-			
-			TextInputDialog level1 = new TextInputDialog();
-			level1.setHeaderText("Enter day of week");
-			Optional<String> op1 = level1.showAndWait();
-			if(!op1.isPresent()) return;
-			String day = op1.get();
-			
-			TextInputDialog level2 = new TextInputDialog();
-			level2.setHeaderText("Enter base price");
-			Optional<String> op2 = level2.showAndWait();
-			if(!op2.isPresent()) return;
-			double basePrice = Double.parseDouble(op2.get());
-			
-			TextInputDialog level3 = new TextInputDialog();
-			level3.setHeaderText("Enter age");
-			Optional<String> op3 = level3.showAndWait();
-			if(!op3.isPresent()) return;
-			int age =  Integer.parseInt(op3.get());
-			
-			Ticket ticket = circus.generateTicket(day, basePrice, age);
-			
-			outputArea.appendText(ticket.toString() + "\n");
-			outputArea.appendText("Do you want to buy more tickets? YES\n");
-			imageView.setImage(new Image(getClass().getResourceAsStream("/images/ticketoffice.jpg")));
+			outputArea.setText(formatTicketDetails(ticketLines));
+			setImage("/images/ticketoffice.jpg");
 		
 		});
 		
 		exitButton.setOnAction(e -> stage.close());
 		
-		HBox row1 = new HBox(10, addAnimalButton, addPersonButton, addBuildingButton, generateTicketButton);
-		HBox row2 = new HBox(10, displayAnimalsButton, displayPersonsButton, displayBuildingsButton, sortAgeButton, sortNameButton, searchAnimalButton, exitButton);
+		HBox row1 = new HBox(16, addAnimalButton, addPersonButton, addBuildingButton, generateTicketButton, displayAnimalsButton);
+		HBox row2 = new HBox(16, displayPersonsButton, displayBuildingsButton, sortAgeButton, sortNameButton);
+		HBox row3 = new HBox(16, searchAnimalButton, exitButton);
 
-		
-		row1.setPadding(new Insets(5));
-		row2.setPadding(new Insets(5));
-		
-		VBox topBar = new VBox(15, row1, row2);
-		topBar.setPadding(new Insets(10));
-		
-		BorderPane root = new BorderPane();
-		root.setTop(topBar);
-		root.setCenter(centerBox);
-		root.setRight(rightPanel);
-		
-		Scene scene = new Scene(root, 1100, 600);
-		stage.setTitle("Bob's Circus GUI");
+			
+		row1.setAlignment(Pos.CENTER);
+		row2.setAlignment(Pos.CENTER);
+		row3.setAlignment(Pos.CENTER);
+			
+		VBox topBar = new VBox(15, row1, row2, row3);
+		topBar.setLayoutX(25);
+		topBar.setLayoutY(68);
+		topBar.setPrefWidth(900);
+			
+		Pane root = new Pane(topBar, outputArea, rightPanel);
+		root.setPrefSize(1200, 915);
+			
+		Scene scene = new Scene(root, 1200, 915);
+		stage.setTitle("Bob's Circus Management System");
 		stage.setScene(scene);
 		stage.show();
+	}
+
+	private void appendAnimalSummary(Animal animal) {
+		outputArea.appendText(animal.toString() + "\n");
+		outputArea.appendText(getAnimalSound(animal) + "\n");
+		outputArea.appendText(getAnimalMovement(animal) + "\n\n");
+	}
+	
+	private void displayAllAnimals() {
+		outputArea.clear();
+		for(Animal animal : animalList) {
+			appendAnimalSummary(animal);
+		}
+	}
+	
+	private String formatAnimalDetails(Animal animal) {
+		return "Animal Details:\n"
+				+ "---------------\n"
+				+ "Name: " + animal.getName() + "\n"
+				+ "Age: " + animal.getAge() + "\n"
+				+ "Species: " + animal.getSpecies() + "\n"
+				+ "Color: " + animal.getColor() + "\n"
+				+ getAnimalSound(animal) + "\n"
+				+ getAnimalMovement(animal) + "\n";
+	}
+	
+	private String getAnimalSound(Animal animal) {
+		if(animal instanceof Dog) {
+			return "Bark!";
+		}
+		else if(animal instanceof Horse) {
+			return "Neigh!";
+		}
+		else if(animal instanceof Bird) {
+			return "Squawk!";
+		}
+		else if(animal instanceof Lion) {
+			return "Roar!";
+		}
+		return "";
+	}
+	
+	private String getAnimalMovement(Animal animal) {
+		if(animal instanceof Dog) {
+			return "Walks around.";
+		}
+		else if(animal instanceof Horse) {
+			return "Gallops.";
+		}
+		else if(animal instanceof Bird) {
+			return "Flies.";
+		}
+		else if(animal instanceof Lion) {
+			return "Pounces!";
+		}
+		return "";
+	}
+	
+	private void displayAllPersons() {
+		outputArea.clear();
+		for(Person person : personList) {
+			outputArea.appendText(formatPerson(person) + "\n");
+		}
+	}
+	
+	private String formatPerson(Person person) {
+		String personType = person instanceof Clerk ? "Clerk" : "Acrobatic";
+		return personType + " - " + person.toString();
+	}
+	
+	private void displayAllBuildings() {
+		outputArea.clear();
+		for(Building building : buildingList) {
+			outputArea.appendText(formatBuilding(building));
+		}
+	}
+	
+	private String formatBuilding(Building building) {
+		return "Building Type: " + building.getBuildingType() + "\n"
+				+ "Color: " + building.getColor() + "\n"
+				+ String.format("Size: %.1f x %.1f%n", building.getLength(), building.getWidth());
+	}
+	
+	private String showChoice(String header, String defaultChoice, String... choices) {
+		ChoiceDialog<String> dialog = new ChoiceDialog<>(defaultChoice, choices);
+		dialog.setTitle("Confirmation");
+		dialog.setHeaderText(header);
+		Optional<String> result = dialog.showAndWait();
+		return result.orElse(null);
+	}
+	
+	private String formatTicketLine(int ticketCount, String customerChoice, double basePrice,
+			String dayChoice, String seatChoice) {
+		String customerType = customerChoice.split(" ")[0];
+		String day = dayChoice.split(" ")[0].toUpperCase();
+		int dayDiscount = dayChoice.contains("10%") ? 10 : 0;
+		int customerDiscount = customerChoice.contains("10%") ? 10 : customerChoice.contains("5%") ? 5 : 0;
+		double total = ticketCount * basePrice;
+		
+		total *= (1 - dayDiscount / 100.0);
+		total *= (1 - customerDiscount / 100.0);
+		
+		if(seatChoice.startsWith("Upper Level")) {
+			total -= ticketCount * basePrice * 0.05;
+		}
+		else if(seatChoice.startsWith("T-Level")) {
+			total *= 2;
+		}
+		
+		return String.format("%d %s $%.2f (Day: %s, Day Discount: %d%%, Customer Type Discount: %d%%, Seat: %s)",
+				ticketCount, customerType, total, day, dayDiscount, customerDiscount, seatChoice);
+	}
+	
+	private String formatTicketDetails(List<String> ticketLines) {
+		StringBuilder details = new StringBuilder();
+		details.append("Ticket Calculation Details:\n");
+		details.append("---------------------------\n");
+		for(String ticketLine : ticketLines) {
+			details.append(ticketLine).append("\n");
+		}
+		details.append("\nEnjoy the show!\n");
+		return details.toString();
+	}
+	
+	private void setImage(String imagePath) {
+		InputStream imageStream = getClass().getResourceAsStream(imagePath);
+		if(imageStream != null) {
+			imageView.setImage(new Image(imageStream));
+		}
+		else {
+			imageView.setImage(null);
+		}
 	}
 	
 	public static void main(String[] args) {
@@ -327,4 +512,3 @@ public class CircusDriverApp_GUI extends Application{
 }
 	
 	
-

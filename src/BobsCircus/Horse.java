@@ -16,13 +16,13 @@ public class Horse implements Animal {
     }
 
     @Override
-    public String makeSound() {
-        return "Neigh!";
+    public void makeSound() {
+        System.out.println("Neigh!");
     }
 
     @Override
-    public String move() {
-        return "Gallops.\n";
+    public void move() {
+        System.out.println("Gallops.\n");
     }
 
     // ===== GETTERS =====

@@ -20,13 +20,13 @@ public class Lion implements Animal {
     }
 
     @Override
-    public String move() {
-        return "Pounces!\n";
+    public void move() {
+        System.out.println("Pounces!\n");
     }
     
     @Override
-    public String makeSound() {
-        return "Roar!";
+    public void makeSound() {
+        System.out.println("Roar!");
     }
     
     @Override
